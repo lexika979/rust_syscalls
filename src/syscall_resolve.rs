@@ -173,7 +173,7 @@ pub fn get_function_addr(module_addr: PVOID, hash: u32) -> PVOID {
                         slice::from_raw_parts(dll_name_utf16.as_ptr() as *const u8, dll_name_utf16.len() * 2)
                     }) as ULONG;
 
-                    let target_dll = get_module_addr(dll_hash);
+                    let mut target_dll = get_module_addr(dll_hash);
                     if target_dll.is_null() {
                         // Try to load the DLL if not found
                         let kernel32 = get_module_addr(dbj2_hash(b"kernel32.dll") as ULONG);
