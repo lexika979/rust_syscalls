@@ -74,7 +74,7 @@ pub fn get_cstr_len(pointer: *const char) -> usize{
     (tmp - pointer as u64) as _
 }
 
-fn get_module_addr( hash: ULONG ) -> PVOID
+pub fn get_module_addr( hash: ULONG ) -> PVOID
 {
 	let     ldr      : PPEB_LDR_DATA;
 	let     header   : PLIST_ENTRY;
@@ -106,7 +106,7 @@ fn get_module_addr( hash: ULONG ) -> PVOID
     NULL
 }
 
-fn get_function_addr(mdoule_addr: PVOID, hash: u32) -> PVOID{
+pub fn get_function_addr(mdoule_addr: PVOID, hash: u32) -> PVOID{
     let dos_header   : PIMAGE_DOS_HEADER;
 	let nt_header    : PIMAGE_NT_HEADERS;
     let data_dir     : PIMAGE_DATA_DIRECTORY;
