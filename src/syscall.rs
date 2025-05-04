@@ -12,7 +12,7 @@ macro_rules! syscall {
             let _ = $y;
             cnt += 1;
         )+
-        $crate::syscall::do_syscall(ssn, cnt, $($y), +)
+        $crate::syscall::do_syscall_(ssn, cnt, $($y), +)
     }}
 }
 
@@ -27,18 +27,18 @@ macro_rules! syscall {
             let _ = $y;
             cnt += 1;
         )+
-        $crate::syscall::do_syscall(ssn, addr, cnt, $($y), +)
+        $crate::syscall::do_syscall_(ssn, addr, cnt, $($y), +)
     }}
 }
 
 #[cfg(target_arch = "x86_64")]
 #[cfg(all(feature = "_DIRECT_", not(feature = "_INDIRECT_")))]
 global_asm!("
-.global do_syscall
+.global do_syscall_
 
 .section .text
 
-do_syscall:
+do_syscall_:
 
     mov [rsp - 0x8],  rsi
     mov [rsp - 0x10], rdi
@@ -71,11 +71,11 @@ skip:
 #[cfg(target_arch = "x86_64")]
 #[cfg(all(feature = "_INDIRECT_", not(feature = "_DIRECT_")))]
 global_asm!("
-.global do_syscall
+.global do_syscall_
 
 .section .text
 
-do_syscall:
+do_syscall_:
     mov [rsp - 0x8],  rsi
     mov [rsp - 0x10], rdi
     mov [rsp - 0x18], r12
@@ -110,11 +110,11 @@ skip:
 #[cfg(target_arch = "x86")]
 #[cfg(all(feature = "_DIRECT_", not(feature = "_INDIRECT_")))]
 global_asm!("
-.global _do_syscall
+.global _do_syscall_
 
 .section .text
 
-_do_syscall:
+_do_syscall_:
     mov [esp - 0x04], esi
     mov [esp - 0x08], edi
 
@@ -149,11 +149,11 @@ sysenter:
 #[cfg(target_arch = "x86")]
 #[cfg(all(feature = "_INDIRECT_", not(feature = "_DIRECT_")))]
 global_asm!("
-.global _do_syscall
+.global _do_syscall_
 
 .section .text
 
-_do_syscall:
+_do_syscall_:
     mov ecx, [esp + 0x0C]
     not ecx
     add ecx, 1
@@ -202,7 +202,7 @@ is_wow64:
 #[cfg(target_arch = "x86_64")]
 #[cfg(all(feature = "_DIRECT_", not(feature = "_INDIRECT_")))]
 extern "C" {
-    pub fn do_syscall(
+    pub fn do_syscall_(
         ssn: u16,
         n_args: u32,
         ...
@@ -212,7 +212,7 @@ extern "C" {
 #[cfg(target_arch = "x86_64")]
 #[cfg(all(feature = "_INDIRECT_", not(feature = "_DIRECT_")))]
 extern "C" {
-    pub fn do_syscall(
+    pub fn do_syscall_(
         ssn: u16,
         syscall_addr: u64,
         n_args: u32,
@@ -223,7 +223,7 @@ extern "C" {
 #[cfg(target_arch = "x86")]
 #[cfg(all(feature = "_DIRECT_", not(feature = "_INDIRECT_")))]
 extern "C" {
-    pub fn do_syscall(
+    pub fn do_syscall_(
         ssn: u16,
         n_args: u32,
         ...
@@ -233,7 +233,7 @@ extern "C" {
 #[cfg(target_arch = "x86")]
 #[cfg(all(feature = "_INDIRECT_", not(feature = "_DIRECT_")))]
 extern "C" {
-    pub fn do_syscall(
+    pub fn do_syscall_(
         ssn: u16,
         n_args: u32,
         syscall_addr: u32,
