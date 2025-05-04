@@ -61,15 +61,6 @@ pub unsafe fn nt_current_peb() -> PPEB {
 }
 
 
-pub fn get_cstr_len(pointer: *const char) -> usize{
-    let mut tmp: u64 = pointer as u64;
-    unsafe {
-        while *(tmp as *const u8) != 0{
-            tmp += 1;
-        }
-    }
-    (tmp - pointer as u64) as _
-}
 
 pub fn get_module_addr(hash: ULONG) -> PVOID {
     let ldr: PPEB_LDR_DATA;
