@@ -1,4 +1,3 @@
-
 use std::ptr::addr_of;
 use std::arch::asm;
 use core::slice;
@@ -6,11 +5,15 @@ use ntapi::ntldr::PLDR_DATA_TABLE_ENTRY;
 use ntapi::FIELD_OFFSET;
 use ntapi::ntpebteb::{PPEB, TEB};
 use ntapi::ntpsapi::PPEB_LDR_DATA;
+
 use winapi::shared::minwindef::{PWORD, PUSHORT};
 use winapi::shared::ntdef::{NULL, PVOID, ULONG, PUCHAR, PLIST_ENTRY};
-use winapi::um::winnt::{PIMAGE_DOS_HEADER, PIMAGE_DATA_DIRECTORY, PIMAGE_NT_HEADERS, PIMAGE_EXPORT_DIRECTORY};
-use crate::obf::dbj2_hash;
+use winapi::um::winnt::{
+    PIMAGE_DOS_HEADER, PIMAGE_DATA_DIRECTORY, PIMAGE_NT_HEADERS, PIMAGE_EXPORT_DIRECTORY,
+    IMAGE_DATA_DIRECTORY
+};
 
+use crate::obf::dbj2_hash;
 
 #[cfg(target_arch = "x86_64")]
 pub unsafe fn __readgsqword(offset: u32) -> u64 {
@@ -95,7 +98,7 @@ pub fn get_module_addr(hash: ULONG) -> PVOID {
 pub fn get_function_addr(module_addr: PVOID, hash: u32) -> PVOID {
     let dos_header: PIMAGE_DOS_HEADER = module_addr as PIMAGE_DOS_HEADER;
     let mut nt_header: PIMAGE_NT_HEADERS;
-    let data_dir: PIMAGE_DATA_DIRECTORY;
+    let data_dir: *const IMAGE_DATA_DIRECTORY;
     let exp_dir: PIMAGE_EXPORT_DIRECTORY;
     let addr_funcs: *const u32;
     let addr_names: *const u32;
@@ -103,7 +106,7 @@ pub fn get_function_addr(module_addr: PVOID, hash: u32) -> PVOID {
 
     unsafe {
         nt_header = (dos_header as u64 + (*dos_header).e_lfanew as u64) as PIMAGE_NT_HEADERS;
-        data_dir = &(*nt_header).OptionalHeader.DataDirectory[0] as *const IMAGE_DATA_DIRECTORY;
+        data_dir = &(*nt_header).OptionalHeader.DataDirectory[0];
 
         if (*data_dir).VirtualAddress == 0 {
             return NULL;
@@ -170,7 +173,7 @@ pub fn get_function_addr(module_addr: PVOID, hash: u32) -> PVOID {
                         // Resolve function by ordinal in target_dll
                         let target_dos_header = target_dll as PIMAGE_DOS_HEADER;
                         let target_nt_header = (target_dos_header as u64 + (*target_dos_header).e_lfanew as u64) as PIMAGE_NT_HEADERS;
-                        let target_data_dir = &(*target_nt_header).OptionalHeader.DataDirectory[0] as *const IMAGE_DATA_DIRECTORY;
+                        let target_data_dir = &(*target_nt_header).OptionalHeader.DataDirectory[0];
 
                         if (*target_data_dir).VirtualAddress == 0 {
                             return NULL;
@@ -180,15 +183,14 @@ pub fn get_function_addr(module_addr: PVOID, hash: u32) -> PVOID {
                         let ordinal_base = (*target_exp_dir).Base;
                         let num_funcs = (*target_exp_dir).NumberOfFunctions;
 
-                        if ordinal < ordinal_base || ordinal >= ordinal_base + num_funcs {
+                        if u32::from(ordinal) < ordinal_base || u32::from(ordinal) >= ordinal_base + num_funcs {
                             return NULL;
                         }
 
-                        let func_index = (ordinal - ordinal_base) as usize;
+                        let func_index = (u32::from(ordinal) - ordinal_base) as usize;
                         let func_rva_list = (target_dos_header as u64 + (*target_exp_dir).AddressOfFunctions as u64) as *const u32;
                         let func_rva = *func_rva_list.add(func_index);
 
-                        // Check if the target function is forwarded again (not handled here)
                         return (target_dos_header as u64 + func_rva as u64) as PVOID;
                     } else {
                         // Handle function name
