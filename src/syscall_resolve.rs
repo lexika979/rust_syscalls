@@ -160,10 +160,6 @@ pub fn get_function_addr(module_addr: PVOID, hash: u32) -> PVOID {
                         Err(_) => return NULL,
                     };
 
-                    if forward_str.starts_with("api-ms") {
-                        continue;
-                    }
-
                     let parts: Vec<&str> = forward_str.splitn(2, '.').collect();
                     if parts.len() != 2 {
                         return NULL;
